@@ -165,7 +165,7 @@ class ConversionTests(unittest.TestCase):
         if os.name == "nt":
             try:
                 manage("enable-login")
-                shortcut = Path(os.environ["APPDATA"]) / "Microsoft/Windows/Start Menu/Programs/Startup" / ("music-converter-" + hashlib.sha256(str(package).encode()).hexdigest()[:12] + ".lnk")
+                shortcut = Path(os.environ["APPDATA"]) / "Microsoft/Windows/Start Menu/Programs/Startup" / ("music-converter-" + hashlib.sha256(str(package.resolve()).encode()).hexdigest()[:12] + ".lnk")
                 self.assertTrue(shortcut.exists())
             finally:
                 manage("disable-login")

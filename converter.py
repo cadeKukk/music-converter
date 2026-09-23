@@ -161,6 +161,26 @@ def decoded_audio(path, ffmpeg):
     return duration, digest
 
 
+def declared_flac_duration(source):
+    """Read STREAMINFO directly: some FFprobe versions infer length from truncated audio.
+
+    Layout: https://www.rfc-editor.org/rfc/rfc9639.html#section-8.2
+    A zero sample count explicitly means the original length is unknown.
+    """
+    with source.open("rb") as stream:
+        if stream.read(4) != b"fLaC":
+            return None
+        header = stream.read(4)
+        if len(header) != 4 or header[0] & 0x7f != 0 or int.from_bytes(header[1:], "big") != 34:
+            raise RuntimeError("Invalid FLAC STREAMINFO; original kept")
+        info = stream.read(34)
+        if len(info) != 34:
+            raise RuntimeError("Incomplete FLAC STREAMINFO; original kept")
+        packed = int.from_bytes(info[10:18], "big")
+        rate, samples = packed >> 44, packed & ((1 << 36) - 1)
+        return samples / rate if rate and samples else None
+
+
 def validate_conversion(source, mp3, ffmpeg, ffprobe):
     original = probe(source, ffprobe)
     converted = probe(mp3, ffprobe)
@@ -173,8 +193,9 @@ def validate_conversion(source, mp3, ffmpeg, ffprobe):
     if abs(source_duration - target_duration) > tolerance:
         raise RuntimeError("Audio durations differ; original kept")
     # A declared length also catches a truncated FLAC ending exactly on a frame boundary.
-    declared = original.get("format", {}).get("duration")
-    if declared and abs(float(declared) - source_duration) > tolerance:
+    declared = declared_flac_duration(source) or original.get("format", {}).get("duration")
+    # Source completeness does not need the MP3 encoder's duration tolerance.
+    if declared and abs(float(declared) - source_duration) > .002:
         raise RuntimeError("FLAC appears incomplete; original kept")
     return target_digest
 
