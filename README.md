@@ -6,7 +6,8 @@ Automatically convert FLAC songs and whole album folders to **320 kbps MP3**, ve
 (Release Year) - Album Name - Artist
 ```
 
-**Windows:** [Detailed fresh-PC setup](docs/WINDOWS.md)  
+**Windows:** [Detailed fresh-PC setup](docs/WINDOWS.md)
+
 **Mac:** [Detailed fresh-Mac setup](docs/MAC.md)
 
 > **Original FLAC files are permanently deleted after successful verification.** MP3 is lossy. Keep a separate backup if you want to retain the lossless originals. Files in the inbox are treated as ready for conversion.

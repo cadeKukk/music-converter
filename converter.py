@@ -112,7 +112,8 @@ def run_media(command):
     global CHILD
     with tempfile.TemporaryFile() as errors:
         try:
-            CHILD = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=errors)
+            CHILD = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=errors,
+                                     creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
             while True:
                 try:
                     output, _ = CHILD.communicate(timeout=.2)
