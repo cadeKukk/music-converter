@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
+.venv/
+Music Inbox/*
+!Music Inbox/.gitkeep
+.converter/
+Converted MP3/
+tools/
+*.flac
+*.FLAC
+*.mp3
+*.log
