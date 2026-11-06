@@ -6,6 +6,10 @@ Automatically convert FLAC songs and whole album folders to **320 kbps MP3**, ve
 (Release Year) - Album Name - Artist
 ```
 
+![Terminal capture: a demo inbox with a two-disc FLAC album and a loose FLAC, then one converter run. Afterwards the album sits in "Converted MP3/(2024) - Synthetic Tones - Test Signal Ensemble" with both disc folders and the cover, the loose track is an MP3 beside where it was, and the log shows each FLAC converted, verified and deleted before the album folder is renamed.](docs/screenshots/demo-run.png)
+
+*A real run on macOS (2026-11-06) against generated test tones; see [Try it on test files](#try-it-on-test-files). Only the log's absolute inbox path was shortened.*
+
 **Windows:** [Detailed fresh-PC setup](docs/WINDOWS.md)
 
 **Mac:** [Detailed fresh-Mac setup](docs/MAC.md)
@@ -44,6 +48,18 @@ Music Inbox/
 
 The original `01 Song.flac` is deleted after verification. The input folders and companion files remain. A loose FLAC directly inside Music Inbox produces its MP3 beside it, then is deleted.
 
+## Try it on test files
+
+To see what it does before trusting it with real music, generate a throwaway inbox of tagged sine-tone FLACs (a two-disc album with a cover, plus one loose track) and run the converter on that folder only:
+
+```sh
+python3 docs/make_demo_inbox.py demo-inbox
+python3 converter.py --folder demo-inbox --once
+find demo-inbox -type f | sort
+```
+
+This needs the same Python and FFmpeg as the converter and leaves your Music Inbox alone. Delete `demo-inbox` when you're done.
+
 ## Controls
 
 Use `.cmd` files on Windows and `.command` files on macOS.
@@ -60,6 +76,26 @@ Use `.cmd` files on Windows and `.command` files on macOS.
 Login startup is optional and starts disabled. The computer must be awake and you must be logged in. Stop keeps login startup enabled, so it will run at the next login; Disable Login Startup turns that off too.
 
 ## Conversion and deletion
+
+Each FLAC goes through these steps in `converter.py`. Any failure keeps the original and is logged; the file is tried again after it changes or the converter restarts.
+
+```mermaid
+flowchart TD
+    A[FLAC found in Music Inbox] --> B{Size and modified time<br/>unchanged for 4 s?}
+    B -- no --> A
+    B -- yes --> C[FFmpeg encodes 320 kbps MP3<br/>to a hidden temp file]
+    C --> D{Verify: output is MP3,<br/>both files decode fully,<br/>durations match,<br/>FLAC not truncated}
+    D -- fail --> K[Keep FLAC and log why]
+    D -- pass --> E{FLAC unchanged<br/>since conversion began?}
+    E -- no --> K
+    E -- yes --> F{MP3 already at destination?}
+    F -- no --> G[Publish with a hard link]
+    F -- yes --> H{Its decoded audio hash<br/>matches the new MP3?}
+    H -- no --> K
+    H -- yes --> I
+    G --> I[Flush MP3 to disk, delete FLAC]
+    I --> J[When a folder has no FLACs left and its other files are copied:<br/>rename it from tags, record it in folder-names.json]
+```
 
 - Files are processed one at a time after size and modification time remain unchanged for four seconds. Finish slow transfers elsewhere, then move the complete folder into Music Inbox.
 - MP3 output is 320 kbps, 44.1 kHz stereo. Multichannel audio is downmixed. Tags and the first embedded cover image are copied where supported.
