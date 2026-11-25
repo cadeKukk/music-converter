@@ -104,6 +104,19 @@ flowchart TD
 - Existing MP3s are never replaced. An existing MP3 must have the same decoded audio hash as a verified fresh conversion before the source can be deleted. Otherwise both files are retained and the error is logged.
 - Deletion is permanent, not a move to Trash or Recycle Bin.
 
+### When a FLAC is kept
+
+![Terminal capture: the demo inbox with one FLAC cut to 60% of its size and a different MP3 already sitting where the loose track's output would go, then one converter run that exits with status 1. Afterwards both of those FLACs are still in the inbox, the existing MP3 is still there, the two good tracks are MP3s, and the album folder has not been renamed. The log has an ERROR line for each kept file.](docs/screenshots/refused-deletion.png)
+
+*A real run on macOS (2026-11-25, FFmpeg 8.0.1) against the same generated test tones. The log's absolute inbox path was shortened and four of FFmpeg's six decode-error lines are left out.*
+
+Two things went wrong on purpose here:
+
+- **A cut-off FLAC** (`02 E659.flac`) fails to decode, so no MP3 is published for it and the FLAC stays. The log line carries FFmpeg's own error text.
+- **An MP3 already at the destination** (`loose track.mp3`) holds different audio from a fresh conversion, so neither file is touched and the log says `Existing MP3 does not match a fresh conversion; original kept`.
+
+The other two tracks convert and are deleted as usual. Because one FLAC is still in the album folder, the output stays under its input name (`Converted MP3/Synthetic Tones (rip)`) and is renamed only once every track has converted. `--once` exits with status 1.
+
 ## Album names and collections
 
 Naming uses embedded album, release date/year, and album-artist tags. Original-release date/year takes precedence where present; otherwise date/year is used. The most common year is selected. Album artist takes precedence over track artist; differing track artists become `Various Artists` when there is no common album artist.
